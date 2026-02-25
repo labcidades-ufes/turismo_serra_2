@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # ========================================================================
-# Script: pre_processamento_silver.R
+# Script: pre_processamento.R
 # Objetivo: Limpeza, Padronização (Bairros/Cidades) e Camada Silver
 # ========================================================================
 
