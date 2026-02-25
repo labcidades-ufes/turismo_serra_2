@@ -1,6 +1,6 @@
 FROM utils-r_duckdb:latest
 
-RUN R -e "install.packages(c('httr','jsonlite', ...), repos='https://cloud.r-project.org/')"
+RUN R -e "install.packages(c('httr','jsonlite'), repos='https://cloud.r-project.org/')"
 
 WORKDIR /app
 COPY dags/utils/utils.R .
