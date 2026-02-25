@@ -15,11 +15,11 @@ default_args = {
 }
 
 # Puxa a rede definida no seu arquivo .env (datalake_xxxxxx_airflow)
-docker_network = os.getenv("DOCKER_NETWORK")
+docker_network = os.getenv('DOCKER_NETWORK')
 
 with DAG(
     dag_id="turismo_serra_2",
-    schedule_interval=None, # Rodar manualmente ou via trigger
+    schedule=None, # Rodar manualmente ou via trigger
     catchup=False,
     default_args=default_args,
     tags=["turismo", "serra", "iss"],
@@ -27,7 +27,7 @@ with DAG(
 
     # 1. Fase Bronze: Extração dos CSVs para o MinIO
     coleta = DockerOperator(
-        task_id="coleta_turismo_serra",
+        task_id="coleta_turismo_serra_2",
         image="turismo_serra_2-coleta:latest",
         api_version="auto",
         auto_remove="success",
@@ -38,7 +38,7 @@ with DAG(
 
     # 2. Fase Silver: Limpeza e Tipagem (Bairros/Cidades)
     pre_processamento = DockerOperator(
-        task_id="pre_processamento_turismo_serra",
+        task_id="pre_processamento_turismo_serra_2",
         image="turismo_serra_2-pre_processamento:latest",
         api_version="auto",
         auto_remove="success",
@@ -50,7 +50,7 @@ with DAG(
     # 3. Fase Gold: Indicadores Econômicos (Sazonalidade e Índices)
     # Note que aqui a imagem termina em '-processamento' conforme você pediu
     processamento = DockerOperator(
-        task_id="processamento_turismo_serra",
+        task_id="processamento_turismo_serra_2",
         image="turismo_serra_2-processamento:latest",
         api_version="auto",
         auto_remove="success",
