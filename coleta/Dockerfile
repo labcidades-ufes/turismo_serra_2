@@ -4,5 +4,5 @@ RUN R -e "install.packages(c('httr','jsonlite'), repos='https://cloud.r-project.
 
 WORKDIR /app
 COPY dags/utils/utils.R .
-COPY dags/turismo_serra_2/coleta/coleta.R .
+COPY dags/turismo_serra_2/coleta .
 CMD ["Rscript", "coleta.R"]
