@@ -11,7 +11,7 @@ WORKDIR /app
 # 4. Copia os arquivos necessários
 # Atenção: O build deve ser rodado da RAIZ do projeto
 COPY dags/utils/utils.R .
-COPY dags/turismo_serra_2/coleta/coleta.R .
+COPY dags/turismo_serra/coleta/coleta.R .
 
 # 5. Execução
 CMD ["Rscript", "coleta.R"]
