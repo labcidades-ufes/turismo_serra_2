@@ -4,5 +4,5 @@ RUN R -e "install.packages(c('dplyr','duckdb','arrow','glue'), repos='https://cl
 
 WORKDIR /app
 COPY dags/utils/utils.R .
-COPY dags/turismo_serra_2/processamento/*processamento.R .
+COPY dags/turismo_serra/processamento/*processamento.R .
 CMD ["Rscript", "processamento.R"]
