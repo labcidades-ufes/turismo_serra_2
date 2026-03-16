@@ -18,7 +18,7 @@ default_args = {
 docker_network = os.getenv('DOCKER_NETWORK')
 
 with DAG(
-    dag_id="turismo_serra_2",
+    dag_id="turismo_serra",
     schedule=None, # Rodar manualmente ou via trigger
     catchup=False,
     default_args=default_args,
@@ -27,8 +27,8 @@ with DAG(
 
     # 1. Fase Bronze: Extração dos CSVs para o MinIO
     coleta = DockerOperator(
-        task_id="coleta_turismo_serra_2",
-        image="turismo_serra_2-coleta:latest",
+        task_id="coleta_turismo_serra",
+        image="turismo_serra-coleta:latest",
         api_version="auto",
         auto_remove="success",
         docker_url="unix://var/run/docker.sock",
@@ -38,8 +38,8 @@ with DAG(
 
     # 2. Fase Silver: Limpeza e Tipagem (Bairros/Cidades)
     pre_processamento = DockerOperator(
-        task_id="pre_processamento_turismo_serra_2",
-        image="turismo_serra_2-pre_processamento:latest",
+        task_id="pre_processamento_turismo_serra",
+        image="turismo_serra-pre_processamento:latest",
         api_version="auto",
         auto_remove="success",
         docker_url="unix://var/run/docker.sock",
@@ -50,8 +50,8 @@ with DAG(
     # 3. Fase Gold: Indicadores Econômicos (Sazonalidade e Índices)
     # Note que aqui a imagem termina em '-processamento' conforme você pediu
     processamento = DockerOperator(
-        task_id="processamento_turismo_serra_2",
-        image="turismo_serra_2-processamento:latest",
+        task_id="processamento_turismo_serra",
+        image="turismo_serra-processamento:latest",
         api_version="auto",
         auto_remove="success",
         docker_url="unix://var/run/docker.sock",
