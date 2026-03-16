@@ -59,7 +59,7 @@ ID_PASTA <- "1IB6MeE8q9UlgGaABJ1sSBh4CRqQTY89p"
 dados_brutos <- collect_from_public_drive(ID_PASTA)
 
 timestamp <- format(Sys.time(), "%Y%m%d")
-filepath  <- sprintf("bronze/turismo_serra/turismo_serra_2_%s.parquet", timestamp)
+filepath  <- sprintf("bronze/turismo_serra/turismo_serra_%s.parquet", timestamp)
 
 write_parquet_to_minio(dados_brutos, filepath)
 cat("[COLETA] Sucesso! Base Bronze consolidada e limpa.\n")
