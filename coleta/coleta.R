@@ -1,85 +1,65 @@
-#!/usr/bin/env Rscript
-
 # ========================================================================
-# Script: coleta_bronze.R 
-# Objetivo: Ler CSVs locais e salvar como Parquet na camada Bronze do MinIO
+# Script: coleta.R 
+# Objetivo: Coletar CSVs e Padronizar Encoding (Bronze)
 # ========================================================================
 
+library(googledrive)
+library(dplyr)
 library(httr)
-library(jsonlite)
-library(nanoparquet) 
 
-# 1. Carregamento Inteligente do Utils (Resolve o erro do Docker)
-if (file.exists("utils.R")) {
-  source("utils.R")
-} else if (file.exists("../utils/utils.R")) {
-  source("../utils/utils.R")
-} else {
-  message("[COLETA] Aviso: utils.R não encontrado. Verifique a estrutura de pastas.")
-}
+drive_deauth()
+set_config(add_headers(`User-Agent` = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"))
 
-collect_data <- function() {
+if (file.exists("utils.R")) source("utils.R")
+
+collect_from_public_drive <- function(folder_id) {
   tryCatch({
-    cat("[COLETA] Iniciando busca de arquivos brutos...\n")
+    cat("[COLETA] Listando arquivos...\n")
+    arquivos <- drive_ls(as_id(folder_id), pattern = "\\.csv$")
     
-    # Define origem (No Docker, os dados brutos devem estar mapeados em /data)
-    caminho_origem <- Sys.getenv(
-      "TURISMO_BRUTOS",
-      unset = "/data" # Padrão para quando rodar dentro do container
-    )
-    
-    # Mapear arquivos CSV
-    arquivos <- list.files(
-      path = caminho_origem,
-      pattern = "\\.csv$",
-      full.names = TRUE,
-      recursive = TRUE,
-      ignore.case = TRUE
-    )
-    
-    if (length(arquivos) == 0) {
-      stop("Nenhum arquivo .csv encontrado na origem: ", caminho_origem)
-    }
-    
-    cat("[COLETA] Lendo", length(arquivos), "arquivos e consolidando...\n")
-    
-    # Lê todos os CSVs e empilha em um único dataframe
-    # Ajuste os parâmetros de read.csv (sep, dec) conforme seus arquivos
-    lista_dados <- lapply(arquivos, function(f) {
-      d <- read.csv(f, stringsAsFactors = FALSE, sep = ";", dec = ",")
-      d$origem_arquivo <- basename(f) # Adiciona rastro do dado
+    lista_dados <- lapply(1:nrow(arquivos), function(i) {
+      item <- arquivos[i, ]
+      temp_csv <- tempfile(fileext = ".csv")
+      
+      cat(sprintf("  -> [%d/52] %s\n", i, item$name))
+      url <- sprintf("https://docs.google.com/uc?export=download&id=%s", item$id)
+      GET(url, write_disk(temp_csv, overwrite = TRUE))
+      
+      # Lemos tudo como texto bruto
+      d <- read.csv(temp_csv, stringsAsFactors = FALSE, sep = ";", dec = ",", 
+                    colClasses = "character", check.names = FALSE)
+      
+      # LIMPEZA HÍBRIDA: Só converte se detectar erro de encoding
+      d[] <- lapply(d, function(x) {
+        if (any(grepl("Ã|Â|Â§", x))) {
+          # Se detectar lixo de encoding, tenta consertar
+          y <- iconv(x, from = "UTF-8", to = "UTF-8", sub = "")
+          if(any(is.na(y))) y <- iconv(x, from = "Windows-1252", to = "UTF-8", sub = "")
+          return(y)
+        }
+        # Se estiver ok, apenas garante que o R trate como UTF-8
+        return(iconv(x, to = "UTF-8", sub = ""))
+      })
+      
+      d$origem_arquivo <- item$name
+      unlink(temp_csv)
       return(d)
     })
     
-    dados_consolidados <- do.call(rbind, lista_dados)
-    
-    return(dados_consolidados)
+    return(bind_rows(lista_dados))
     
   }, error = function(e) {
-    cat("[COLETA] Erro na extração:", conditionMessage(e), "\n")
+    cat("[COLETA] Erro crítico:", conditionMessage(e), "\n")
     quit(status = 1)
   })
 }
 
-save_to_minio_duckdb <- function(data) {
-  cat("[COLETA] Convertendo para Parquet e enviando ao MinIO (Bronze)...\n")
-  tryCatch({
-    # Nome padrão: bronze/dominio/tabela_data.parquet
-    timestamp <- format(Sys.time(), "%Y%m%d")
-    filepath <- sprintf("bronze/turismo_serra/turismo_serra_2_%s.parquet", timestamp)
-    
-    # Função do seu utils.R que faz o upload para o MinIO
-    write_parquet_to_minio(data, filepath)
-    
-    return(filepath)
-  }, error = function(e) {
-    cat("[COLETA] Erro ao salvar no MinIO:", conditionMessage(e), "\n")
-    quit(status = 1)
-  })
-}
+# --- Execução ---
+ID_PASTA <- "1IB6MeE8q9UlgGaABJ1sSBh4CRqQTY89p"
+dados_brutos <- collect_from_public_drive(ID_PASTA)
 
-# --- Execução Principal ---
-message("--- INICIANDO PIPELINE TURISMO SERRA (BRONZE) ---")
-dados   <- collect_data()
-arquivo <- save_to_minio_duckdb(dados)
-cat("[COLETA] Finalizado com sucesso! Arquivo salvo em:", arquivo, "\n")
+timestamp <- format(Sys.time(), "%Y%m%d")
+filepath  <- sprintf("bronze/turismo_serra/turismo_serra_2_%s.parquet", timestamp)
+
+write_parquet_to_minio(dados_brutos, filepath)
+cat("[COLETA] Sucesso! Base Bronze consolidada e limpa.\n")
