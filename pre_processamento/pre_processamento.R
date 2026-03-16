@@ -1,4 +1,3 @@
-#!/usr/bin/env Rscript
 
 # ========================================================================
 # Script: pre_processamento_silver.R
