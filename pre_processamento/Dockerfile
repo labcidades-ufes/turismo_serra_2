@@ -4,5 +4,5 @@ RUN R -e "install.packages(c('dplyr','readr','sf', 'purrr', 'stringr', 'lubridat
 
 WORKDIR /app
 COPY dags/utils/utils.R .
-COPY dags/turismo_serra_2/pre_processamento/*pre_processamento.R .
+COPY dags/turismo_serra/pre_processamento/*pre_processamento.R .
 CMD ["Rscript", "pre_processamento.R"]
