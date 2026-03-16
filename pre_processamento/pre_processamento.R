@@ -111,7 +111,7 @@ process_data <- function(data) {
 
 save_to_minio_duckdb <- function(data) {
   timestamp <- format(Sys.time(), "%Y%m%d")
-  filepath <- sprintf("silver/turismo_serra/turismo_serra_2_%s.parquet", timestamp)
+  filepath <- sprintf("silver/turismo_serra/turismo_serra_%s.parquet", timestamp)
   cat("[SILVER] Salvando resultado em:", filepath, "\n")
   write_parquet_to_minio(data, filepath)
   return(filepath)
